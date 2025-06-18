@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KCET Chatbot</title>
+  <style>
+    :root {
+      --bg-dark: #121421;
+      --bot-bg: #2c2f48;
+      --user-bg: #2c2f48;
+      --highlight: #8a3ffc;
+      --text-light: #f5f5f7;
+      --input-bg: #1e1f2f;
+      --shadow: rgba(138, 63, 252, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      transition: 0.3s ease all;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      width: 100vw;
+      background: var(--bg-dark);
+      color: var(--text-light);
+      display: flex;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: #1a1c2c;
+      padding: 20px;
+      border-right: 1px solid #2b2e42;
+      overflow-y: auto;
+    }
+
+    .sidebar h2 {
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+
+    .history-item {
+      background: #2b2e42;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #ccc;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .history-item:hover {
+      background: var(--highlight);
+      color: white;
+    }
+
+    .delete-history {
+      color: red;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: calc(100vw - 260px);
+    }
+
+    .header {
+      padding: 16px;
+      background-color: var(--bot-bg);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-align: center;
+      box-shadow: 0 2px 10px var(--shadow);
+    }
+
+    .chat-container {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    .message {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      max-width: 100%;
+    }
+
+    .message .bubble {
+      padding: 14px 18px;
+      border-radius: 14px;
+      font-size: 16px;
+      background: var(--bot-bg);
+      line-height: 1.5;
+      max-width: 100%;
+    }
+
+    .bot {
+      align-self: flex-start;
+    }
+
+    .user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .user .bubble {
+      background-color: var(--highlight);
+      color: white;
+    }
+
+    .profile-pic {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .input-area {
+      padding: 16px;
+      background: var(--bg-dark);
+      border-top: 1px solid #1c1d2e;
+      display: flex;
+      justify-content: center;
+    }
+
+    .input-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: #2c2f48;
+      border-radius: 999px;
+      padding: 12px 16px;
+      max-width: 900px;
+      width: 100%;
+      box-shadow: 0 0 0 transparent;
+    }
+
+    .input-wrapper:focus-within {
+      box-shadow: 0 0 8px var(--shadow);
+    }
+
+    #userInput {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 16px;
+      padding: 12px;
+      color: var(--text-light);
+    }
+
+    .voice-btn,
+    #sendBtn {
+      background: transparent;
+      border: none;
+      color: var(--text-light);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 0;
+      border-radius: 50%;
+      margin-left: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 36px;
+      width: 36px;
+    }
+
+    .voice-btn svg {
+      vertical-align: middle;
+      display: block;
+    }
+
+    .voice-btn:hover,
+    #sendBtn:hover {
+      background-color: #3a3b5c;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>History</h2>
+    <div id="history"></div>
+  </div>
+
+  <div class="main">
+    <div class="header">KCET - Internship ChatBot</div>
+
+    <div class="chat-container" id="chatContainer">
+      <div class="message bot">
+        <img src="static/chatbot.jpeg" alt="KCET" class="profile-pic">
+        <div class="bubble">Hello! I'm KCET. Ask me anything about Internship in Machine Learning!</div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrapper">
+        <input type="text" id="userInput" placeholder="Send a message..." />
+        <button class="voice-btn" onclick="startListening()">
+          <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 14q-.825 0-1.413-.588Q10 12.825 10 12V6q0-.825.587-1.412Q11.175 4 12 4t1.413.588Q14 5.175 14 6v6q0 .825-.587 1.412Q12.825 14 12 14Zm-1 7v-2.05q-2.475-.35-4.037-2.163Q5.4 15.975 5.4 13.5h2.05q0 1.575 1.112 2.688Q9.675 17.3 11.25 17.3t2.688-1.112Q15.05 14.625 15.05 13.05H17.1q0 2.475-1.563 4.287Q13.975 18.65 11.5 18.95V21Z" />
+          </svg>
+        </button>
+        <button id="sendBtn">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chatContainer = document.getElementById('chatContainer');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const historyDiv = document.getElementById('history');
+
+    function saveHistoryToLocalStorage() {
+      localStorage.setItem('sidebarHistory', historyDiv.innerHTML);
+    }
+
+    function loadHistoryFromLocalStorage() {
+      const savedHistory = localStorage.getItem('sidebarHistory');
+      if (savedHistory) {
+        historyDiv.innerHTML = savedHistory;
+        attachDeleteEvents();
+      }
+    }
+
+    function attachDeleteEvents() {
+      document.querySelectorAll('.delete-history').forEach(btn => {
+        btn.onclick = function (e) {
+          e.stopPropagation();
+          this.parentElement.remove();
+          saveHistoryToLocalStorage();
+        };
+      });
+    }
+
+    function speak(text) {
+      const synth = window.speechSynthesis;
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'en-IN';
+      utter.volume = 1;
+      synth.speak(utter);
+    }
+
+    function appendMessage(text, sender = 'user', isHTML = false) {
+      const msg = document.createElement('div');
+      msg.classList.add('message', sender);
+
+      const avatar = document.createElement('img');
+      avatar.className = 'profile-pic';
+      avatar.src = sender === 'bot' ? 'static/chatbot.jpeg' : 'static/user2.png';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      if (isHTML) {
+        bubble.innerHTML = text;
+      } else {
+        bubble.innerText = text;
+      }
+
+      msg.appendChild(avatar);
+      msg.appendChild(bubble);
+      chatContainer.appendChild(msg);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      if (sender === 'bot') speak(bubble.innerText);
+
+      if (sender === 'user') {
+        const hist = document.createElement('div');
+        hist.className = 'history-item';
+        hist.innerHTML = `<span>${text.substring(0, 20)}...</span><span class="delete-history">✖</span>`;
+        historyDiv.prepend(hist);
+
+        hist.querySelector('.delete-history').addEventListener('click', (e) => {
+          e.stopPropagation();
+          hist.remove();
+          saveHistoryToLocalStorage();
+        });
+
+        saveHistoryToLocalStorage();
+      }
+    }
+
+    function handleUserMessage(msgText) {
+      appendMessage(msgText, 'user');
+      userInput.value = '';
+
+      fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: msgText })
+      })
+      .then(response => response.json())
+      .then(data => {
+        let botHTML = `<p>${data.response || "I'm not sure how to respond to that."}</p>`;
+
+        if (data.download_url) {
+          botHTML += `<p><a href="${data.download_url}" download style="color: #8a3ffc;" target="_blank">📄 Click here to download report</a></p>`;
+        }
+
+        if (data.image_url) {
+          botHTML += `<p><img src="${data.image_url}" alt="Day Image" style="max-width: 100%; border-radius: 8px;" /></p>`;
+        }
+
+        appendMessage(botHTML, 'bot', true);
+      })
+      .catch(err => {
+        appendMessage("Error connecting to server.", 'bot');
+        console.error(err);
+      });
+    }
+
+    sendBtn.addEventListener('click', () => {
+      const msgText = userInput.value.trim();
+      if (msgText !== '') handleUserMessage(msgText);
+    });
+
+    userInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendBtn.click();
+    });
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN';
+    recognition.interimResults = false;
+
+    recognition.onresult = (event) => {
+      const voiceText = event.results[0][0].transcript;
+      userInput.value = voiceText;
+    };
+
+    recognition.onerror = (event) => {
+      alert("Voice recognition error: " + event.error);
+    };
+
+    function startListening() {
+      recognition.start();
+    }
+
+    window.onload = loadHistoryFromLocalStorage;
+  </script>
+</body>
+</html>
