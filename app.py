@@ -10,11 +10,21 @@ app = Flask(__name__)
 with open("qa_dataset.json") as f:
     qa_pairs = json.load(f)
 
+users = {
+    "john@example.com": {"password": "1234"},
+    "jane@example.com": {"password": "5678"}
+}
+   
+
 # Extract questions from dataset
 questions = [pair["question"] for pair in qa_pairs]
 
 @app.route("/")
 def index():
+    return render_template("login.html")
+
+@app.route("/chat")
+def chat_page():
     return render_template("index.html")
 
 # Serve static reports (PDF)
@@ -68,6 +78,18 @@ def chat():
                 return jsonify({"response": pair["answer"]})
 
     return jsonify({"response": "Sorry, I don't understand that question."})
+
+
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+    user = users.get(email)
+    if not user or user["password"] != password:
+        return jsonify({"success": False, "message": "Invalid email or password."}), 401
+    else:
+        return jsonify({"success": True, "message": "Login successful.", "redirect_url": "/chat"})
 
 if __name__ == "__main__":
     app.run(debug=True)
