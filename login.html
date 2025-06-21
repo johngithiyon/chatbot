@@ -78,26 +78,6 @@
       transform: scale(1.05);
     }
 
-    .circle-video {
-      width: 160px;
-      height: 160px;
-      border-radius: 50%;
-      overflow: hidden;
-      margin: 24px auto;
-      border: 4px solid var(--accent-color);
-      box-shadow: 0 0 25px var(--shadow-glow);
-    }
-
-    .circle-video video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    canvas {
-      display: none;
-    }
-
     button {
       width: 100%;
       padding: 14px;
@@ -137,10 +117,6 @@
       .login-box h2 {
         font-size: 24px;
       }
-      .circle-video {
-        width: 130px;
-        height: 130px;
-      }
     }
   </style>
 </head>
@@ -148,46 +124,36 @@
   <div class="login-box">
     <h2>Login</h2>
     <form id="loginForm">
-      <input type="text" id="username" placeholder=" Email" required autocomplete="off" />
-      <input type="password" id="password" placeholder=" Password" required autocomplete="off" />
-
-      <div class="circle-video">
-        <video id="video" autoplay muted playsinline></video>
-      </div>
-
-      <canvas id="canvas" width="240" height="180"></canvas>
-
-      <button type="button" onclick="captureFace()">Capture Face</button>
+      <input type="text" id="username" placeholder="Email" required autocomplete="off" />
+      <input type="password" id="password" placeholder="Password" required autocomplete="off">
       <button type="submit">Login</button>
     </form>
   </div>
 
   <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => { video.srcObject = stream; })
-      .catch(err => {
-        alert("Camera access is required!");
-        console.error("Camera error:", err);
-      });
-
-    function captureFace() {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const faceData = canvas.toDataURL('image/png');
-      localStorage.setItem('face_image', faceData);
-      alert("Face captured successfully.");
-    }
 
     document.getElementById('loginForm').addEventListener('submit', e => {
       e.preventDefault();
-      const username = document.getElementById('username').value.trim();
+
+      const email = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value.trim();
-      const faceImage = localStorage.getItem('face_image');
-      console.log({ username, password, faceImage });
-      // 🔒 Send this data securely to backend for verification
+
+      fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password})
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.message);
+        if (data.success) {
+          window.location.href = data.redirect_url;
+        }
+      })
+      .catch(err => {
+        console.error("Login error:", err);
+        alert("❌ Login failed due to a server error.");
+      });
     });
   </script>
 </body>
